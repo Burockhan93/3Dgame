@@ -1,0 +1,125 @@
+1-) Crash Bandicoot benzeri bir oyun yapmak amacim burda.
+https://www.youtube.com/watch?v=IstYXj_k4NA&t=222s  burdaki videodan baslangici alip üzerine gelistircez.
+
+2-)oncelikle basit bir map ve player olusturduk ve playerin hareketini ekledik. hareketi rigidbody vasitasyla verecegiz. Update icinde velocity degistiriyoruz. Daha sonra kapsül yuvarlanmasin diye
+rigidbody constrainst icinde rotationi kitledik. Ziplama ekledik ama ziplamada dikkat edilmesi gerek konu addforce ve velocity nin icine yazilan vector3 arasinda fark var.
+
+3-)character controllerla daha iyi bir kontrolcu yapacaz dedi eleman rb yi sildi.
+Ani seyleri yaptik sayilir ama bu sefer Jumpin icine Physik.gravity.y yi ekledik. ikisinin toplami oldu daha gercekci ziplama olsun diye.ama bu sefer de eleman yere düsmeden tekrar ziplayabilio ve ziplarken tak diye ziplio. yukari cikarken gravity yok gibi.
+
+4-)simdi ziplama isini halledecez.Charactercontroller icinde OntheGround metodu var onu kullanarak iki ziplamayi onleycez. havada kontrollleri de bu sekilde degstrmek mümkün sonra bakariz ona.
+o oldu simdi ziplama yaptigmiz zaman warp olayini New Vector3 un icine charmove.y yazarak hallettik.Buralar hep optimize edilecek oyuna göre
+
+5-) simdi kamera olayina bakalm.Kamera icin script yaptik bir tane.Lookat komutu ile yapiot.Transformuna bakiyo kamera. Lateupdate in icine koymayi unutma. cam1 degerlerini public yaptik manuel degstrioz.
+
+6-)Mouse bakiyila kamera kontrülu eklycez simdi. Project settings e göre "Mouse X" inputu rotasyonu saglayabilir ama bunu y eksemime atayacagz. cunku y ekseninde dönmek demek saga sola dönmek demek.
+	// move the player based on camera
+        float horizontal = Input.GetAxis("Mouse X")*cam1speed;
+        player.transform.Rotate(0, horizontal, 0);
+
+        float vertical = Input.GetAxis("Mouse Y") * cam1speed;
+        player.transform.Rotate(vertical, 0, 0);
+        //move the camera based on rotation
+        float cam1_Y_Angle = player.transform.eulerAngles.y;
+        float cam1_X_Angle = player.transform.eulerAngles.x;
+
+        Quaternion rotation = Quaternion.Euler(cam1_X_Angle, cam1_Y_Angle, 0);
+        transform.position = player.transform.position - (rotation * cam1);;  kod bu son satiri pek analamadm. bakacaz. sonuc cok iyi durmuyor ama bunu da yapmamiz gerekiyordu düzeltilecek.
+
+7-)Simdi kamera yukari asagi giderken öne arkaya yatiyordu eleman onu önleycez.kameranin icine pivot diye bos obje koyup startta bunun transformunu playera atarsan pivot artik playerin altobjesi oluyor.  
+	pivot.transform.parent = player.transform; su kodla.
+	simdi kameranin baktigi yere gitme
+	onun icin eski kodlari tekrar scrap ettik. su an oyuncu pivotun döndügü yere dönüyo nasil olsa transform.forward oyuncunun z ekneinde önü oldugu icin
+onla carpicaz vertical alinan input degerini. aynisini horizontale da yaptik.
+	simdi güzel birsey** normalized ne demek vektörü normalize ediyorki toplam deger 1 i gecmesin.
+	kontrol kisminda ziplama ve kameranin sonsuz dönmesi var cözmemiz gerekn.
+	kamera scriptinde kameranin y si playerdan kucukse kameranin y si playerin y si olsun dedik cözüldü.
+	ziplama konusunda da normalize dan önceki y degerini saklayip normalize dan sonrasina ekledik.
+	yukari asagi bakarken kamera ziplamasi olyurdu up an down limitleriyle onu engelledik.
+	invert ekledik kameraya.
+
+8-)Cursor.lockState = CursorLockMode.Locked; oyunda mous i gizleme
+
+9-) simdi elemanin player modeli var onu alacaz. Ilerde bunu kendi molimle degistiririm simdilik devam edelim.
+	burda hazir kemikli modele animasyon nasil yapilir ona bir bakmis olduk ilerd isimize yarayacak bayagi.
+
+10-)hazir animasyonlari kullancaz verilen.
+	bu isi anladim blenderdan model üretip animasyon ekleme isini de hallettim mi kendi karakterimi entegre edebilrm.
+	
+11-) Script icind simdi animasyonu referans gösteren bisey alacaz. bu sayede animasyonlari kontrol edecez benzerini daha önce yapmistik.
+	anim.SetBool("isGrounded", !controller.isGrounded); 
+        anim.SetFloat("Speed", (Mathf.Abs(Input.GetAxis("Vertical")) + Mathf.Abs(Input.GetAxis("Horizontal"))));
+	// anim adinda public animator aldik karakterin icindeki animator bu. Daha sonra bunun degerleri nasil aldigini koyduk. bu sayede animasyonlari yönettik
+
+12-)simdi karakterin mouse yönüne göre o yöne kosmasini yapacaz "WASD" 
+	öncelikle nasildi hatrlayalim. Bizim kamera icinde bir pivot gameobejctimiz vardi. bu obje startda playerin childi yapildi.
+	daha sonra mouse dan gelen verilerden asagi yukari bakma buna saga sola bakma oyuncuya atandi.
+	saga sola bakinca pivot da dönüyor(child cünkü)) asagi yukari bakinca oyuncu hareket etmiyor sadece kamera hareket ediyor.
+	simdi söyle yapacaz. mouse hareket edince oyuncu hic hareket etmesin ama oyuncuya bir girdi gelince mouse yönüne dogru kossun. 
+	onun icin de pivotu kullaniyoruz yine. pivot artik playerin childi olmamali.
+	Kodlarin icine ufak notlar yaziyorum ordan tekrar bakarak hatirla.
+	simdi de playermove icinde playera komut verdgmiz zaman pivotun oldugu yöne gitmesini saglayalim.
+	public gameobject olstrp pivotu aldik.
+if (Input.GetAxis("Vertical") !=0 || Input.GetAxis("Horizontal") != 0)
+        {
+            transform.rotation= Quaternion.Euler(0, pivot.transform.eulerAngles.y, 0);    bu komut baktigi yöne gitmesini sagliyor
+
+Quaternion newRotation = Quaternion.LookRotation(new Vector3(_charMove.x, 0,_charMove.z));
+            playermodel1.transform.rotation = Quaternion.Slerp(transform.rotation, newRotation, _rotatSpeed * Time.deltaTime);
+	bu komut sayesinde de iki rotation arasinda yumusak gecis sagliyoruz **Lookrotation ve Slerpe bak ayrintili
+	playermodel1 diye de bir gameobje olstrduk buna karakteri koyacaz.
+
+hareketler kismini bitirmis olduk ´-04.09.2020 hafta sonu kodlari bir rafine ederiz.
+
+13-) oyuna altin gibi seyler ekliyo ben baskasini eklerim sonra simdilik altin diyelim.Download ettgmiz yerde altin da vadrdi onu aldik bos gameobjenin icine koyduk
+altina bir animasyon cektik kiyak oldu. collider ekledik ve script ekledik bir de GameManager diye birsey ekledik bu farkli biraz******1
+GameManager oyunda bir tane olmasi lazim. Altina trigger ekledik player gelince altin sayisi artsin.  
+FindObjectOfType<GameManager>().AddGold(value);  gamemanager scripti olan nesneyi bul ve su fonksiyonu cagir. altini ekle
+Daha sonra text ekledik texti gamemanager icine koyduk ordan altin sayisini aritoz.
+
+14-)goldpickupeffect yaptik particle systemden. Goldpick icindeki scripte ontrigger icine koyduk loopu kapatcaz. bir de kullanimdan sonra destroy etmemiz lazim.
+Onun icin ayri script yazdik prefabdaki particle in icine koyduk. tek satirlik birsey.
+
+15-)Simdi healthbar ve damage e geldi burasi önemli. healthmanager scripti olusturp gamemanagera attik
+Bir kaktüs indirdik ona da  damageplayer fonksiyonu ekledik dikkat edilmesi gereken burda.
+iki tane collider ekledik birisi istrigger. yani icinden gecilmiyor ve dokununca can gidiyor.
+ama dokunusunun etkisi yok kaktüs biraz geri savurmali oyuncuyu.burda temel yapacagmiz sey oyuncu bir süre 
+hareket edemesin. PlayerMove un icine oyuncuyu belli süre hareket ettiremeycgmiz bir geri savrulma ekleycez.
+simdi unu da söyle yapiyoruz. Bize damagi kaktüs vuruyo ama canimiti Healthmanager götürüyor.
+oyunda sadece Kaktüs olmayacak düsman olarak o yüzden Healthmanager bizi geri savursun diyoruz.
+kaktusun triggerina girince gidecegi yönün vectörünü ve kac vuracagini hesapliyour healthmanagera pasliorz
+healtmanagera gelince can eksiliyor ve geri savrulma icin playermove a pasliyoruz.
+playermove a gelince savrulma islemi yapilior ve bu sürede kontoller durduruluor. (ifli bir ifade koyduk oraya _knoockbackCounter<=0)
+		--sikinti su : eleman y ekseninde ucusa geciyor addForce gibi birsey olsa biraz daha güzel görünür ona bakacaz.
+		--arka arkaya iki defa caninin gitmemesi lazim ama gidiyor. Damage yedikten sonra kisa bir sure damage almamasini saglamamiz lazim.
+			++
+			++afterdamage diye iki ayri float ekledik bu sayede damagedan sonra tekrar dolana kadr damage almio eleman.
+
+[15.10.2020] burda addexplosionforce tarzinda birsey eklemek mümkün bu hafta icinde bakacam
+
+simdi bir de elemana damagedan sonra yanip sönme ekleyelim bini renderer sayesinde yapacaz.
+Startta elemanin icinde GEtComponentsinchildren ile SkinnedMeshrendererini alip playerrenderera koyduk.
+Update metodunun icinde fash degerlerini kullanarak yanip sönme efekti verdik oldu.
+
+16-) ölme mekanigi ekleyecegz simdi.
+Health scriptinin icine respawn fonksiyonu ekledik ama bunu güzellestrcez. isinlanma gibi oluyor. Coroutine ekleyip biraz bekleme yapacaz.
+o da halloldu.
+simdi ölünce biraz animasyon falan ekleyelim. o da oldu bir onceki altin particle i gibi
+olme animasyonu eklendi videolar da biti bu arada ben e siyah ekran ekledim öldükten sonra ona bir de animasyon ekledim
+05.09.2020
+
+17-)Artik fikirler ile burdan devam edecegiz. hadi bakalim
+
+			
+
+
+	
+
+
+
+
+
+
+
+
+
